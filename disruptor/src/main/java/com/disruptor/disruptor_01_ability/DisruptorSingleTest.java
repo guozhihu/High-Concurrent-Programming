@@ -33,6 +33,8 @@ public class DisruptorSingleTest {
         //消费数据
         disruptor.handleEventsWith(consumer);
         disruptor.start();
+        
+        // 启动一个线程用于生产数据
         new Thread(new Runnable() {
             
             public void run() {
