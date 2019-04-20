@@ -17,9 +17,11 @@ import java.util.concurrent.Executors;
 public class Main {
     
     public static void main(String[] args) {
-        // 参数准备工作
+        // 创建工厂
         OrderEventFactory orderEventFactory = new OrderEventFactory();
-        int ringBufferSize = 4;
+        // 创建ringBuffer大小
+        int ringBufferSize = 4; // ringBufferSize大小一定要是2的N次方
+        // 创建一个可缓存的线程 提供线程来触发Consumer 的事件处理
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         
         /**
@@ -30,11 +32,13 @@ public class Main {
          * 5 waitStrategy: 等待策略
          */
         // 1.实例化disruptor对象
-        Disruptor<OrderEvent> disruptor = new Disruptor<OrderEvent>(orderEventFactory,
+        Disruptor<OrderEvent> disruptor = new Disruptor<OrderEvent>(
+            orderEventFactory,
             ringBufferSize,
             executor,
             ProducerType.SINGLE,
-            new BlockingWaitStrategy());
+            new BlockingWaitStrategy()
+        );
         
         // 2.添加消费者的监听（构建disruptor与消费者的一个关联关系）
         disruptor.handleEventsWith(new OrderEventHandler());
@@ -45,8 +49,10 @@ public class Main {
         // 4.获取实际存储数据的容器：RingBuffer
         RingBuffer<OrderEvent> ringBuffer = disruptor.getRingBuffer();
         
+        // 5.创建生产者
         OrderEventProducer producer = new OrderEventProducer(ringBuffer);
         
+        // 6.指定缓冲区大小
         ByteBuffer bb = ByteBuffer.allocate(8);
         
         for (long i = 0; i < 5; i++) {
@@ -54,6 +60,7 @@ public class Main {
             producer.sendData(bb);
         }
         
+        // 7.关闭disruptor和executor
         disruptor.shutdown();
         executor.shutdown();
     }
